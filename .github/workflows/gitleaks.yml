@@ -1,32 +1,24 @@
-name: Gitleaks Secret Scan
+name: gitleaks-scan
+
 on:
   push:
-    branches: [ master ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ master ]
+
 jobs:
-  scan:
-    name: gitleaks
+  gitleaks:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
+      - uses: actions/checkout@v4
       - name: Run Gitleaks
-        id: gitleaks  # Adds output reference
-        uses: gitleaks/gitleaks-action@v2
-        continue-on-error: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload SARIF results (if leaks found)
-        if: always() && steps.gitleaks.outputs.sarif_file != ''
-        uses: github/codeql-action/upload-sarif@v3
+        uses: zricethezav/gitleaks-action@v2
         with:
-          sarif_file: ${{ steps.gitleaks.outputs.sarif_file }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          args: --report=gitleaks-report.json --redact
+      - name: Upload gitleaks report
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-report
+          path: gitleaks-report.json
 
-      - name: Log results
-        if: always()
-        run: echo "Scan complete! Leaks: ${{ steps.gitleaks.outputs.leaks_count || 0 }}"
+
